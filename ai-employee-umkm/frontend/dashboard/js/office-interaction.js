@@ -77,8 +77,6 @@
     $('#agentRole').textContent = staff.role || '';
     $('#agentTask').textContent = staff.task || '';
     panel.hidden = false;
-    $('#agentMessageForm').hidden = true;
-    $('#agentMessageToggle').setAttribute('aria-expanded', 'false');
     $('#agentVoice').disabled = !window.Voice || !window.Voice.supported;
     if ($('#agentVoice').disabled) setStatus(t('dashboard.voiceUnsupported'));
     else setStatus('');
@@ -149,14 +147,6 @@
       if (window.OfficeScene) window.OfficeScene.clearSelection();
       $('#agentPanel').hidden = true;
       selectedStaff = null;
-    });
-
-    $('#agentMessageToggle').addEventListener('click', () => {
-      const form = $('#agentMessageForm');
-      const isOpen = form.hidden;
-      form.hidden = !isOpen;
-      $('#agentMessageToggle').setAttribute('aria-expanded', String(isOpen));
-      if (isOpen) $('#agentMessage').focus();
     });
 
     $('#agentMessageForm').addEventListener('submit', (event) => {
