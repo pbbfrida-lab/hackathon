@@ -10,7 +10,11 @@
       const dot = document.createElement('span');
       dot.className = 'dot' + (s.status === 'working' ? ' working' : '');
       const box = document.createElement('div');
-      const name = document.createElement('b'); name.textContent = s.name;
+      const name = document.createElement('button');
+      name.type = 'button';
+      name.className = 'staff-select';
+      name.dataset.agentId = s.id;
+      name.textContent = s.name;
       const role = document.createElement('small'); role.textContent = s.role;
       const task = document.createElement('p'); task.textContent = s.task;
       box.append(name, role, task);

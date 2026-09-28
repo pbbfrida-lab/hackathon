@@ -42,12 +42,18 @@ const env = {
   ai: {
     order: list(process.env.AI_PROVIDER_ORDER).length
       ? list(process.env.AI_PROVIDER_ORDER)
-      : ['groq', 'gemini', 'freebuff'],
+      : ['gemini', 'groq', 'freebuff'],
     requestTimeoutMs: int(process.env.AI_TIMEOUT_MS, 45000),
     maxSteps: int(process.env.AI_MAX_STEPS, 5),
     temperature: Number(process.env.AI_TEMPERATURE ?? 0.2),
     maxTokens: int(process.env.AI_MAX_TOKENS, 900),
     providerPriority: list(process.env.AI_PROVIDER_PRIORITY),
+    agentProviders: {
+      customer_service: String(process.env.AI_PROVIDER_SARI || 'gemini').trim().toLowerCase(),
+      finance: String(process.env.AI_PROVIDER_FINANCE || 'gemini').trim().toLowerCase(),
+      inventory: String(process.env.AI_PROVIDER_INVENTORY || 'gemini').trim().toLowerCase(),
+      marketing: String(process.env.AI_PROVIDER_MARKETING || 'gemini').trim().toLowerCase(),
+    },
     groq: {
       apiKey: secret(process.env.GROQ_API_KEY),
       baseUrl: (process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/$/, ''),

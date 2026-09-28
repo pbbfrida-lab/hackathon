@@ -126,7 +126,7 @@ async function runAgent({ agentKey, history, message, ctx }) {
   const maxSteps = config.ai.maxSteps;
 
   for (let step = 0; step < maxSteps; step += 1) {
-    const turn = await providers.chat({ messages, tools: definitions });
+    const turn = await providers.chat({ agentKey, messages, tools: definitions });
     const calls = turn.toolCalls || [];
 
     if (!calls.length) {
@@ -276,7 +276,7 @@ async function runDemoAgent({ agentKey, message, ctx }) {
  * @param {string} [input.lang] bahasa jawaban: 'id' (default) atau 'en'
  * @param {object} [input.context] { channel, name, verifiedPhone }
  */
-async function handle({ message, history = [], role = 'owner', lang, context = {} } = {}) {
+async function handle({ message, history = [], role = 'owner', lang, context = {}, agentKey: requestedAgentKey } = {}) {
   const text = String(message || '').trim();
   if (!text) {
     const err = new Error('Pesan tidak boleh kosong.');
@@ -286,7 +286,14 @@ async function handle({ message, history = [], role = 'owner', lang, context = {
   }
 
   const ctx = { ...context, role, lang: prompts.normalizeLang(lang || context.lang) };
-  const agentKey = await route(text, ctx);
+  const requestedAgent = role === 'customer' ? '' : String(requestedAgentKey || '').trim();
+  if (requestedAgent && !AGENTS[requestedAgent]) {
+    const err = new Error(`Agen AI "${requestedAgent}" tidak dikenal.`);
+    err.statusCode = 400;
+    err.expose = true;
+    throw err;
+  }
+  const agentKey = role === 'customer' ? 'customer_service' : requestedAgent || await route(text, ctx);
   const agent = AGENTS[agentKey];
   const live = providers.isLive();
 

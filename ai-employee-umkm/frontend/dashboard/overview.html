@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="dashboard.overviewPageTitle">OmniStaff AI — Ringkasan Dashboard</title>
+  <script>
+    try { document.documentElement.lang = (localStorage.getItem('omnistaff_lang') || 'id') === 'en' ? 'en-US' : 'id-ID'; } catch (e) { /* storage diblokir */ }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="../assets/i18n.js" defer></script>
+</head>
+<body>
+  <header class="topbar overview-topbar">
+    <div>
+      <h1>OmniStaff AI</h1>
+      <p data-i18n="dashboard.overviewSubtitle">Ringkasan aktivitas dan operasional tokomu.</p>
+    </div>
+    <nav>
+      <a class="btn ghost" href="/dashboard/" data-i18n="dashboard.backDashboard">Kembali ke dashboard</a>
+      <div class="lang-switch" data-lang-switch></div>
+    </nav>
+  </header>
+
+  <main class="overview-main">
+    <h2 data-i18n="dashboard.overviewLink">Ringkasan</h2>
+    <aside class="side">
+      <section aria-labelledby="h-today">
+        <h2 id="h-today" data-i18n="dashboard.today">Hari ini</h2>
+        <div class="numbers">
+          <div><strong id="n-orders">–</strong><span data-i18n="dashboard.orders">pesanan</span></div>
+          <div><strong id="n-revenue">–</strong><span data-i18n="dashboard.revenue">omzet</span></div>
+          <div><strong id="n-profit">–</strong><span data-i18n="dashboard.profit">laba</span></div>
+        </div>
+      </section>
+      <section aria-labelledby="h-staff">
+        <h2 id="h-staff" data-i18n="dashboard.staff">Staf</h2>
+        <ul class="staff-list" id="staff-list" aria-live="polite"></ul>
+      </section>
+      <section aria-labelledby="h-chan">
+        <h2 id="h-chan" data-i18n="dashboard.channels">Kanal pelanggan</h2>
+        <ul class="staff-list" id="channel-list"></ul>
+      </section>
+      <section class="command" aria-labelledby="h-cmd">
+        <h2 id="h-cmd" data-i18n="dashboard.command">Beri perintah</h2>
+        <form id="cmd-form">
+          <input id="cmd-input" type="text" autocomplete="off" data-i18n-attr="placeholder:dashboard.commandPlaceholder aria-label:dashboard.commandAria" placeholder="Contoh: stok kopi robusta" aria-label="Perintah untuk staf">
+          <button class="btn" type="submit" id="cmd-send" data-i18n="dashboard.send">Kirim</button>
+        </form>
+        <div id="reply" role="status"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="../assets/api.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>

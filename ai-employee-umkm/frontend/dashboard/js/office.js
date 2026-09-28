@@ -65,6 +65,7 @@
     const sprite = new T.Sprite(new T.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
     sprite.scale.set(3.4, 0.85, 1);
     sprite.renderOrder = 10;
+    sprite.visible = false;
     return { canvas, texture, sprite };
   }
 
@@ -89,24 +90,63 @@
   Object.keys(SPOTS).forEach((id) => {
     const av = Avatars.create(id);
     av.group.position.set(SPOTS[id][0], 0, SPOTS[id][1]);
+    av.group.userData.agentId = id;
     scene.add(av.group);
     const label = makeLabel();
     label.sprite.position.set(0, av.labelY, av.labelZ);
     av.group.add(label.sprite);
-    stations[id] = { av, label, key: '' };
+    stations[id] = { av, label, key: '', staff: null };
   });
 
   // Kamera orbit sederhana
   let angle = 0.3, pitch = 0.6, dist = 18, dragging = false, lastX = 0, lastY = 0;
+  let selectedAgentId = null;
+  const raycaster = new T.Raycaster();
+  const pointer = new T.Vector2();
   function placeCamera() {
     camera.position.set(Math.sin(angle) * Math.cos(pitch) * dist, Math.sin(pitch) * dist, Math.cos(angle) * Math.cos(pitch) * dist);
     camera.lookAt(0, 1.1, 0.4);
   }
+  function agentAt(clientX, clientY) {
+    const rect = el.getBoundingClientRect();
+    pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    const groups = Object.values(stations).map((station) => station.av.group);
+    const hit = raycaster.intersectObjects(groups, true)[0];
+    let object = hit && hit.object;
+    while (object && !object.userData.agentId) object = object.parent;
+    return object ? object.userData.agentId : null;
+  }
+  function selectAgent(id) {
+    const station = stations[id];
+    if (!station) return;
+    selectedAgentId = id;
+    Object.entries(stations).forEach(([stationId, item]) => { item.label.sprite.visible = stationId === id; });
+    const selectedStaff = station.staff || { id };
+    if (window.OfficeInteraction) window.OfficeInteraction.open(selectedStaff);
+    window.dispatchEvent(new CustomEvent('office:agent-selected', { detail: selectedStaff }));
+  }
   const el = renderer.domElement;
-  el.addEventListener('pointerdown', (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; el.setPointerCapture(e.pointerId); });
-  el.addEventListener('pointerup', () => { dragging = false; });
+  let pointerStartX = 0, pointerStartY = 0;
+  el.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    lastX = pointerStartX = e.clientX;
+    lastY = pointerStartY = e.clientY;
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointerup', (e) => {
+    const wasClick = dragging && Math.hypot(e.clientX - pointerStartX, e.clientY - pointerStartY) < 6;
+    dragging = false;
+    if (wasClick) {
+      const id = agentAt(e.clientX, e.clientY);
+      if (id) selectAgent(id);
+    }
+  });
   el.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
+    if (!dragging) {
+      el.style.cursor = agentAt(e.clientX, e.clientY) ? 'pointer' : 'grab';
+      return;
+    }
     angle -= (e.clientX - lastX) * 0.006;
     pitch = Math.min(1.3, Math.max(0.15, pitch + (e.clientY - lastY) * 0.005));
     lastX = e.clientX; lastY = e.clientY;
@@ -133,14 +173,23 @@
   })();
 
   window.OfficeScene = {
+    select: selectAgent,
+    clearSelection() {
+      selectedAgentId = null;
+      Object.values(stations).forEach((station) => { station.label.sprite.visible = false; });
+      if (window.OfficeInteraction) window.OfficeInteraction.close();
+      window.dispatchEvent(new CustomEvent('office:agent-selected', { detail: null }));
+    },
     update(staffList) {
       staffList.forEach((s) => {
         const st = stations[s.id];
         if (!st) return;
+        st.staff = s;
         const working = s.status === 'working';
         st.av.setWorking(working);
         const key = `${s.name}|${s.role}|${s.task}|${working}`;
         if (st.key !== key) { st.key = key; drawLabel(st.label, `${s.name} · ${s.role}`, s.task, working); }
+        st.label.sprite.visible = selectedAgentId === s.id;
       });
     },
   };
