@@ -1,20 +1,25 @@
-// WhatsApp Business Cloud API (resmi dari Meta). Butuh URL webhook HTTPS publik (mis. ngrok / cloudflared).
+// WhatsApp Business Cloud API (resmi dari Meta).
+// Wajib punya URL webhook HTTPS publik (ngrok / cloudflared). Berbeda dari Telegram,
+// Meta hanya mengirim webhook sehingga butuh service tunnel.
 const crypto = require('crypto');
 const fs = require('fs');
-const common = require('./common');
-const stt = require('../../ai/voice/sttHandler');
+const config = require('../config');
+const logger = require('../lib/logger').create('whatsapp');
+const channel = require('./context');
+const voice = require('../ai/voice');
 
 const cfg = () => ({
-  token: process.env.WHATSAPP_TOKEN,
-  phoneId: process.env.WHATSAPP_PHONE_NUMBER_ID,
-  verifyToken: process.env.WHATSAPP_VERIFY_TOKEN,
-  appSecret: process.env.WHATSAPP_APP_SECRET,
-  version: process.env.WHATSAPP_GRAPH_VERSION || 'v24.0',
+  token: config.whatsapp.token,
+  phoneId: config.whatsapp.phoneId,
+  verifyToken: config.whatsapp.verifyToken,
+  appSecret: config.whatsapp.appSecret,
 });
-const enabled = () => { const c = cfg(); return Boolean(c.token && c.phoneId); };
-const owners = () => common.parseList(process.env.WHATSAPP_OWNER_NUMBERS).map(common.digits);
-const graph = (p) => `https://graph.facebook.com/${cfg().version}/${p}`;
+
+const enabled = () => Boolean(cfg().token && cfg().phoneId);
+const graph = (p) => `https://graph.facebook.com/${config.whatsapp.graphVersion}/${p}`;
 const auth = () => ({ Authorization: `Bearer ${cfg().token}` });
+const digits = (v) => String(v || '').replace(/\D/g, '');
+const isOwner = (from) => config.whatsapp.owners.map(digits).includes(digits(from));
 
 async function post(path, body, form) {
   const res = await fetch(graph(path), form
@@ -26,35 +31,40 @@ async function post(path, body, form) {
 }
 
 async function sendText(to, text) {
-  const s = String(text);
-  for (let i = 0; i < Math.max(s.length, 1); i += 3800) {
-    await post(`${cfg().phoneId}/messages`, { messaging_product: 'whatsapp', to, type: 'text', text: { body: s.slice(i, i + 3800) } });
+  const source = String(text || '');
+  for (let i = 0; i < Math.max(source.length, 1); i += 3800) {
+    await post(`${cfg().phoneId}/messages`, {
+      messaging_product: 'whatsapp', to, type: 'text', text: { body: source.slice(i, i + 3800) || '-' },
+    });
   }
 }
 
 async function sendImage(to, image) {
   if (!image) return;
-  if (image.pngFile) {
-    const f = new FormData();
-    f.append('messaging_product', 'whatsapp');
-    f.append('type', 'image/png');
-    f.append('file', new Blob([fs.readFileSync(image.pngFile)], { type: 'image/png' }), 'promo.png');
-    const up = await post(`${cfg().phoneId}/media`, null, f);
-    return post(`${cfg().phoneId}/messages`, { messaging_product: 'whatsapp', to, type: 'image', image: { id: up.id } });
+  if (image.remoteUrl) {
+    return post(`${cfg().phoneId}/messages`, { messaging_product: 'whatsapp', to, type: 'image', image: { link: image.remoteUrl } });
   }
-  if (image.remoteUrl) return post(`${cfg().phoneId}/messages`, { messaging_product: 'whatsapp', to, type: 'image', image: { link: image.remoteUrl } });
-  return sendText(to, 'Poster sudah dibuat dan tersimpan di dashboard (WhatsApp tidak mendukung SVG; pasang paket "sharp" agar poster dikirim sebagai PNG).');
+  if (image.pngFile) {
+    const form = new FormData();
+    form.append('messaging_product', 'whatsapp');
+    form.append('type', 'image/png');
+    form.append('file', new Blob([fs.readFileSync(image.pngFile)], { type: 'image/png' }), 'poster.png');
+    const upload = await post(`${cfg().phoneId}/media`, null, form);
+    return post(`${cfg().phoneId}/messages`, { messaging_product: 'whatsapp', to, type: 'image', image: { id: upload.id } });
+  }
+  return sendText(to, 'Poster sudah dibuat dan tersimpan di dashboard. Pasang paket "sharp" agar poster bisa dikirim sebagai PNG.');
 }
 
 async function downloadMedia(mediaId) {
-  const meta = await (await fetch(graph(mediaId), { headers: auth() })).json();
+  const metaRes = await fetch(graph(mediaId), { headers: auth() });
+  const meta = await metaRes.json();
   if (!meta.url) throw new Error('URL media tidak ditemukan');
   const res = await fetch(meta.url, { headers: auth() });
-  if (!res.ok) throw new Error('Gagal mengunduh media');
+  if (!res.ok) throw new Error('gagal mengunduh media');
   return { base64: Buffer.from(await res.arrayBuffer()).toString('base64'), mime: meta.mime_type };
 }
 
-// GET: handshake verifikasi webhook dari Meta.
+/** Handshake verifikasi webhook dari Meta. */
 function verify(req, res) {
   const { verifyToken } = cfg();
   if (verifyToken && req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === verifyToken) {
@@ -66,73 +76,80 @@ function verify(req, res) {
 function signatureValid(req) {
   const { appSecret } = cfg();
   if (!appSecret || !req.rawBody) return false;
-  const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(req.rawBody).digest('hex');
+  const expected = `sha256=${crypto.createHmac('sha256', appSecret).update(req.rawBody).digest('hex')}`;
   const got = req.get('x-hub-signature-256') || '';
   return got.length === expected.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected));
 }
 
 let warnedNoSecret = false;
-async function receive(req, res) {
+
+function receive(req, res) {
   if (!enabled()) return res.sendStatus(403);
   const { appSecret } = cfg();
   const signed = signatureValid(req);
-  if (appSecret && !signed) return res.sendStatus(401);
+  if (appSecret && !signed) return res.sendStatus(401); // tanda tangan tidak cocok = permintaan palsu
   if (!appSecret && !warnedNoSecret) {
     warnedNoSecret = true;
-    console.warn('WHATSAPP_APP_SECRET kosong: tanda tangan webhook tidak diverifikasi, jadi fitur pemilik dinonaktifkan (semua pengirim = pelanggan).');
+    logger.warn('WHATSAPP_APP_SECRET kosong: tanda tangan tidak diverifikasi, jadi semua pengirim diperlakukan sebagai pelanggan.');
   }
-  res.sendStatus(200); // balas cepat; proses di latar belakang
+  res.sendStatus(200); // balas cepat sesuai syarat Meta, proses di latar belakang
 
-  const body = req.body || {};
-  for (const entry of body.entry || []) {
+  for (const entry of (req.body || {}).entry || []) {
     for (const change of entry.changes || []) {
       const value = change.value || {};
       const names = {};
-      (value.contacts || []).forEach((c) => { names[c.wa_id] = c.profile && c.profile.name; });
-      for (const msg of value.messages || []) {
-        handleMessage(msg, names[msg.from], signed).catch((e) => console.error('WhatsApp error:', e.message));
+      for (const contact of value.contacts || []) names[contact.wa_id] = contact.profile && contact.profile.name;
+      for (const message of value.messages || []) {
+        handleMessage(message, names[message.from], signed).catch((err) => logger.error(err.message));
       }
     }
   }
 }
 
-async function handleMessage(msg, name, signed) {
-  if (common.isDuplicate(`wa:${msg.id}`)) return;
-  const from = common.digits(msg.from);
-  post(`${cfg().phoneId}/messages`, { messaging_product: 'whatsapp', status: 'read', message_id: msg.id }).catch(() => {});
+async function handleMessage(message, name, signed) {
+  if (channel.isDuplicate(`wa:${message.id}`)) return;
+  const from = digits(message.from);
+  post(`${cfg().phoneId}/messages`, { messaging_product: 'whatsapp', status: 'read', message_id: message.id }).catch(() => {});
 
   try {
-    let text = msg.type === 'text' && msg.text ? String(msg.text.body || '').trim() : '';
-    if (!text && msg.type === 'audio' && msg.audio) {
+    let text = message.type === 'text' && message.text ? String(message.text.body || '').trim() : '';
+
+    if (!text && message.type === 'audio' && message.audio) {
       try {
-        const media = await downloadMedia(msg.audio.id);
-        text = await stt.transcribe({ audioBase64: media.base64, mimeType: media.mime });
+        const media = await downloadMedia(message.audio.id);
+        const result = await voice.transcribe({ audioBase64: media.base64, mimeType: media.mime });
+        text = result.text;
         await sendText(from, `Saya dengar: "${text}"`);
-      } catch (e) {
-        return await sendText(from, 'Maaf, pesan suara belum bisa diproses. Silakan kirim teks.');
+      } catch (err) {
+        logger.warn('transkripsi audio gagal:', err.message);
+        return sendText(from, 'Maaf, pesan suara belum bisa diproses. Silakan kirim teks.');
       }
     }
-    if (!text) return await sendText(from, 'Saya baru bisa membaca pesan teks dan pesan suara.');
-    if (/^(halo|hai|hi|start|menu)$/i.test(text)) return await sendText(from, common.WELCOME);
+    if (!text) return sendText(from, 'Saya baru bisa membaca pesan teks dan pesan suara.');
+    if (/^(halo|hai|hi|hello|start|menu|bantuan)$/i.test(text)) return sendText(from, channel.WELCOME);
 
-    const isOwner = signed && owners().includes(from);
-    const result = await common.processMessage({
-      channel: 'whatsapp', senderId: from, senderName: name, verifiedPhone: from, isOwner, text,
+    // Peran pemilik hanya diakui bila tanda tangan webhook terverifikasi.
+    const owner = signed && isOwner(from);
+    const result = await channel.processMessage({
+      channel: 'whatsapp', senderId: from, senderName: name, verifiedPhone: from, isOwner: owner, text,
     });
     await sendText(from, result.reply);
-    if (result.image && isOwner) await sendImage(from, result.image);
-  } catch (e) {
-    console.error('WhatsApp error:', e.message);
+    if (owner && result.image) await sendImage(from, result.image);
+  } catch (err) {
+    logger.error('gagal menangani pesan WhatsApp:', err);
     sendText(from, 'Maaf, terjadi kendala. Coba lagi sebentar lagi.').catch(() => {});
   }
 }
 
 function start() {
-  if (!enabled()) return;
-  console.log('WhatsApp Cloud API aktif (menunggu webhook di /webhook/whatsapp).');
-  // Catatan: pesan proaktif ke pemilik hanya berhasil jika pemilik chat dalam 24 jam terakhir.
-  common.registerNotifier((text) => Promise.all(owners().map((n) => sendText(n, text))));
-  if (!cfg().verifyToken) console.warn('WHATSAPP_VERIFY_TOKEN kosong: verifikasi webhook Meta akan gagal.');
+  if (!enabled()) {
+    logger.info('WhatsApp nonaktif (WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID kosong).');
+    return;
+  }
+  logger.info(`WhatsApp Cloud API aktif (menunggu webhook di ${config.publicBaseUrl || 'PUBLIC_BASE_URL'}/webhook/whatsapp).`);
+  // Pesan proaktif hanya sampai kalau pemilik membalas dalam 24 jam terakhir (kebijakan Meta).
+  channel.registerNotifier((text) => Promise.all(config.whatsapp.owners.map((n) => sendText(n, text))));
+  if (!cfg().verifyToken) logger.warn('WHATSAPP_VERIFY_TOKEN kosong: verifikasi webhook Meta akan gagal.');
 }
 
 module.exports = { enabled, start, verify, receive, handleMessage, sendText };

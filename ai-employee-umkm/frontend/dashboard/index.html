@@ -3,64 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OmniStaff AI — Kantor Virtual UMKM</title>
+  <title data-i18n="dashboard.pageTitle">OmniStaff AI — Kantor Virtual UMKM</title>
+  <script>
+    try { document.documentElement.lang = (localStorage.getItem('omnistaff_lang') || 'id') === 'en' ? 'en-US' : 'id-ID'; } catch (e) { /* storage diblokir */ }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script src="../assets/i18n.js" defer></script>
 </head>
 <body>
   <header class="topbar">
     <div>
       <h1>OmniStaff AI</h1>
-      <p>Empat staf virtual yang bekerja untuk tokomu</p>
+      <p data-i18n="dashboard.subtitle">Empat staf virtual yang bekerja untuk tokomu</p>
     </div>
     <nav>
-      <a class="btn" href="/chat">Buka chat &amp; suara</a>
+      <a class="btn" href="/chat" data-i18n="dashboard.openChat">Buka chat &amp; suara</a>
+      <div class="lang-switch" data-lang-switch></div>
     </nav>
   </header>
 
   <main class="layout">
-    <section class="stage" aria-label="Kantor virtual 3D">
-      <div id="office3d" role="img" aria-label="Kantor virtual 3D dengan empat staf AI"></div>
-      <p class="stage-hint">Seret untuk memutar kantor, gulir untuk zoom.</p>
+    <section class="stage" data-i18n-attr="aria-label:dashboard.officeAria" aria-label="Kantor virtual 3D">
+      <div id="office3d" role="img" data-i18n-attr="aria-label:dashboard.officeImgAria" aria-label="Kantor virtual 3D dengan empat staf AI"></div>
+      <p class="stage-hint" data-i18n="dashboard.stageHint">Seret untuk memutar kantor, gulir untuk zoom.</p>
     </section>
 
     <aside class="side">
       <section aria-labelledby="h-today">
-        <h2 id="h-today">Hari ini</h2>
+        <h2 id="h-today" data-i18n="dashboard.today">Hari ini</h2>
         <div class="numbers">
-          <div><strong id="n-orders">–</strong><span>pesanan</span></div>
-          <div><strong id="n-revenue">–</strong><span>omzet</span></div>
-          <div><strong id="n-profit">–</strong><span>laba</span></div>
+          <div><strong id="n-orders">–</strong><span data-i18n="dashboard.orders">pesanan</span></div>
+          <div><strong id="n-revenue">–</strong><span data-i18n="dashboard.revenue">omzet</span></div>
+          <div><strong id="n-profit">–</strong><span data-i18n="dashboard.profit">laba</span></div>
         </div>
       </section>
 
       <section aria-labelledby="h-staff">
-        <h2 id="h-staff">Staf</h2>
+        <h2 id="h-staff" data-i18n="dashboard.staff">Staf</h2>
         <ul class="staff-list" id="staff-list" aria-live="polite"></ul>
       </section>
 
       <section aria-labelledby="h-chan">
-        <h2 id="h-chan">Kanal pelanggan</h2>
+        <h2 id="h-chan" data-i18n="dashboard.channels">Kanal pelanggan</h2>
         <ul class="staff-list" id="channel-list"></ul>
       </section>
 
       <section class="command" aria-labelledby="h-cmd">
-        <h2 id="h-cmd">Beri perintah</h2>
+        <h2 id="h-cmd" data-i18n="dashboard.command">Beri perintah</h2>
         <form id="cmd-form">
-          <input id="cmd-input" type="text" autocomplete="off" placeholder="Contoh: stok kopi robusta" aria-label="Perintah untuk staf">
-          <button class="btn" type="submit" id="cmd-send">Kirim</button>
+          <input id="cmd-input" type="text" autocomplete="off" data-i18n-attr="placeholder:dashboard.commandPlaceholder aria-label:dashboard.commandAria" placeholder="Contoh: stok kopi robusta" aria-label="Perintah untuk staf">
+          <button class="btn" type="submit" id="cmd-send" data-i18n="dashboard.send">Kirim</button>
         </form>
         <div id="reply" role="status"></div>
       </section>
     </aside>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="../assets/api.js"></script>
-  <script src="js/avatars.js"></script>
-  <script src="js/office.js"></script>
-  <script src="js/app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+  <script src="../assets/api.js" defer></script>
+  <script src="js/avatars.js" defer></script>
+  <script src="js/office.js" defer></script>
+  <script src="js/app.js" defer></script>
 </body>
 </html>

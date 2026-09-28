@@ -1,13 +1,17 @@
-// Pengelola mikrofon (Web Speech API, bahasa Indonesia) dan suara balasan (speechSynthesis).
+// Pengelola mikrofon (Web Speech API) dan suara balasan (speechSynthesis).
+// Bahasa rekam/ucapan mengikuti pilihan bahasa di I18N (id-ID atau en-US).
 (function () {
+  'use strict';
+
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const locale = () => (window.I18N ? window.I18N.locale() : 'id-ID');
 
   window.Voice = {
     supported: Boolean(SR),
     listen(onResult, onState) {
       if (!SR) { onState && onState('unsupported'); return null; }
       const rec = new SR();
-      rec.lang = 'id-ID';
+      rec.lang = locale();
       rec.interimResults = false;
       rec.maxAlternatives = 1;
       rec.onstart = () => onState && onState('listening');
@@ -20,8 +24,8 @@
     speak(text) {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text.replace(/\(Mode demo[^)]*\)/, ''));
-      u.lang = 'id-ID';
+      const u = new SpeechSynthesisUtterance(text.replace(/\((Mode demo|Demo mode)[^)]*\)/i, ''));
+      u.lang = locale();
       window.speechSynthesis.speak(u);
     },
   };

@@ -3,11 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OmniStaff AI — Chat &amp; Suara</title>
+  <title data-i18n="chat.pageTitle">OmniStaff AI — Chat &amp; Suara</title>
+  <script>
+    try { document.documentElement.lang = (localStorage.getItem('omnistaff_lang') || 'id') === 'en' ? 'en-US' : 'id-ID'; } catch (e) { /* storage diblokir */ }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/dashboard/css/style.css">
+  <script src="/assets/i18n.js" defer></script>
   <style>
     body { display: flex; flex-direction: column; height: 100vh; }
     .chat-wrap { flex: 1; display: flex; flex-direction: column; max-width: 760px; width: 100%; margin: 0 auto; min-height: 0; }
@@ -27,80 +31,28 @@
 </head>
 <body>
   <header class="topbar">
-    <div><h1>Chat &amp; perintah suara</h1><p>Tanya stok, buat pesanan, minta laporan atau poster</p></div>
-    <nav><a class="btn ghost" href="/dashboard/">Kembali ke kantor</a></nav>
+    <div><h1 data-i18n="chat.heading">Chat &amp; perintah suara</h1><p data-i18n="chat.subtitle">Tanya stok, buat pesanan, minta laporan atau poster</p></div>
+    <nav>
+      <a class="btn ghost" href="/dashboard/" data-i18n="chat.back">Kembali ke kantor</a>
+      <div class="lang-switch" data-lang-switch></div>
+    </nav>
   </header>
 
   <div class="chat-wrap">
-    <div id="log" aria-live="polite">
-      <div class="msg bot"><small>OmniStaff</small>Halo! Coba ketik atau ucapkan: "stok kopi robusta", "laporan hari ini", atau "buatkan poster keripik pisang".</div>
-    </div>
+    <div id="log" aria-live="polite"></div>
     <div class="tools">
-      <label><input type="checkbox" id="speak"> Bacakan jawaban</label>
+      <label><input type="checkbox" id="speak"> <span data-i18n="chat.speak">Bacakan jawaban</span></label>
       <span id="status"></span>
     </div>
     <form class="composer" id="form">
-      <button type="button" class="btn mic" id="mic" aria-label="Bicara">Bicara</button>
-      <input id="text" type="text" autocomplete="off" placeholder="Ketik pesan…" aria-label="Pesan">
-      <button class="btn" type="submit" id="send">Kirim</button>
+      <button type="button" class="btn mic" id="mic" data-i18n="chat.talk" data-i18n-attr="aria-label:chat.talkAria" aria-label="Bicara dengan suara">Bicara</button>
+      <input id="text" type="text" autocomplete="off" data-i18n-attr="placeholder:chat.typePlaceholder aria-label:chat.messageAria" placeholder="Ketik pesan…" aria-label="Pesan">
+      <button class="btn" type="submit" id="send" data-i18n="chat.send">Kirim</button>
     </form>
   </div>
 
-  <script src="/assets/api.js"></script>
-  <script src="voice.js"></script>
-  <script>
-    const log = document.getElementById('log');
-    const text = document.getElementById('text');
-    const status = document.getElementById('status');
-    const mic = document.getElementById('mic');
-    const sessionId = 'chat-' + Math.random().toString(36).slice(2, 8);
-
-    function add(role, who, content, imageUrl) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + role;
-      if (who) { const s = document.createElement('small'); s.textContent = who; div.append(s); }
-      div.append(document.createTextNode(content));
-      if (imageUrl) { const img = document.createElement('img'); img.src = imageUrl; img.alt = 'Poster promosi'; div.append(img); }
-      log.append(div);
-      log.scrollTop = log.scrollHeight;
-    }
-
-    async function send(message, viaVoice) {
-      add('user', '', message);
-      document.getElementById('send').disabled = true;
-      status.textContent = 'Staf sedang bekerja…';
-      try {
-        const path = viaVoice ? '/api/ai/voice' : '/api/ai/chat';
-        const body = viaVoice ? { transcript: message, sessionId } : { message, sessionId };
-        const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
-        add('bot', r.staff, r.reply, r.imageUrl);
-        if (document.getElementById('speak').checked) Voice.speak(r.reply);
-        status.textContent = '';
-      } catch (e) {
-        add('bot', 'Sistem', e.message);
-        status.textContent = '';
-      } finally {
-        document.getElementById('send').disabled = false;
-      }
-    }
-
-    document.getElementById('form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const m = text.value.trim();
-      if (!m) return;
-      text.value = '';
-      send(m, false);
-    });
-
-    mic.addEventListener('click', () => {
-      if (!Voice.supported) { status.textContent = 'Browser ini belum mendukung suara. Gunakan Chrome atau Edge.'; return; }
-      Voice.listen((t) => send(t, true), (state) => {
-        mic.classList.toggle('on', state === 'listening');
-        if (state === 'listening') status.textContent = 'Mendengarkan…';
-        else if (state.startsWith('error')) status.textContent = 'Mikrofon gagal (' + state.slice(6) + '). Periksa izin mikrofon.';
-        else if (state === 'idle' && status.textContent === 'Mendengarkan…') status.textContent = '';
-      });
-    });
-  </script>
+  <script src="/assets/api.js" defer></script>
+  <script src="/ai-chat/voice.js" defer></script>
+  <script src="/ai-chat/js/chat.js" defer></script>
 </body>
 </html>

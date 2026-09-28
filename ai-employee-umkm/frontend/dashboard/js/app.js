@@ -1,5 +1,6 @@
 (function () {
   const $ = (id) => document.getElementById(id);
+  const t = (key, vars) => window.I18N.t(key, vars);
 
   function renderStaff(list) {
     const ul = $('staff-list');
@@ -36,9 +37,9 @@
 
   async function loadChannels() {
     try {
-      const h = await fetch('/api/health').then((r) => r.json());
-      const rows = [['Telegram', h.channels.telegram, h.channels.telegram === 'off' ? 'belum diaktifkan' : `aktif (${h.channels.telegram})`],
-                    ['WhatsApp', h.channels.whatsapp, h.channels.whatsapp === 'off' ? 'belum diaktifkan' : 'aktif (webhook)']];
+      const h = await fetch('/api/health', { headers: { 'x-omnistaff-lang': window.I18N.lang() } }).then((r) => r.json());
+      const rows = [['Telegram', h.channels.telegram, h.channels.telegram === 'off' ? t('dashboard.notEnabled') : t('dashboard.active', { state: h.channels.telegram })],
+                    ['WhatsApp', h.channels.whatsapp, h.channels.whatsapp === 'off' ? t('dashboard.notEnabled') : t('dashboard.activeWebhook')]];
       const ul = $('channel-list'); ul.textContent = '';
       rows.forEach(([name, state, label]) => {
         const li = document.createElement('li');
@@ -58,14 +59,14 @@
     if (!message) return;
     const btn = $('cmd-send'), box = $('reply');
     btn.disabled = true;
-    box.className = 'show'; box.textContent = 'Staf sedang bekerja…';
+    box.className = 'show'; box.textContent = t('dashboard.working');
     pollStaff();
     try {
       const r = await api('/api/ai/chat', { method: 'POST', body: JSON.stringify({ message, sessionId: 'dashboard' }) });
       box.textContent = `${r.staff}: ${r.reply}`;
       if (r.imageUrl) {
         const img = document.createElement('img');
-        img.src = r.imageUrl; img.alt = 'Poster promosi hasil buatan staf';
+        img.src = r.imageUrl; img.alt = t('dashboard.promoAlt');
         box.append(img);
       }
       input.value = '';
@@ -79,6 +80,7 @@
     }
   });
 
+  window.I18N.onLangChange(() => { loadToday(); loadChannels(); });
   pollStaff(); loadToday(); loadChannels();
   setInterval(pollStaff, 2000);
   setInterval(loadToday, 30000);

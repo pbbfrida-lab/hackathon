@@ -1,12 +1,15 @@
 {
   "name": "ai-employee-umkm",
-  "version": "1.0.0",
-  "description": "OmniStaff AI - UMKM Autonomous Virtual Workforce",
+  "version": "2.0.0",
+  "description": "OmniStaff AI - UMKM Autonomous Virtual Workforce (backend Express + multi-provider AI)",
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
-    "db:init": "node database/init.js"
+    "doctor": "node scripts/doctor.js",
+    "doctor:ai": "node scripts/doctor.js --ai",
+    "db:init": "node database/init.js",
+    "db:reset": "node database/init.js --seed"
   },
   "engines": {
     "node": ">=18"
