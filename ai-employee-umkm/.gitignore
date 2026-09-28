@@ -2,3 +2,4 @@ node_modules/
 .env
 frontend/assets/promotions/*
 !frontend/assets/promotions/.gitkeep
+!frontend/assets/promotions/product-kopi-robusta-lampung.webp
