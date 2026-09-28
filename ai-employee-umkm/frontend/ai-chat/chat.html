@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OmniStaff AI — Chat &amp; Suara</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dashboard/css/style.css">
+  <style>
+    body { display: flex; flex-direction: column; height: 100vh; }
+    .chat-wrap { flex: 1; display: flex; flex-direction: column; max-width: 760px; width: 100%; margin: 0 auto; min-height: 0; }
+    #log { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; }
+    .msg.user { align-self: flex-end; background: var(--indigo); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+    .msg small { display: block; color: var(--muted); margin-bottom: 2px; font-weight: 600; }
+    .msg img { display: block; max-width: 100%; margin-top: 8px; border-radius: 8px; }
+    .composer { display: flex; gap: 8px; padding: 12px 16px 20px; border-top: 1px solid var(--line); background: #fff; }
+    .composer input { flex: 1; min-width: 0; font: inherit; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); }
+    .mic { background: var(--jade); color: #fff; }
+    .mic.on { background: #c0392b; }
+    .tools { display: flex; align-items: center; gap: 8px; padding: 0 16px 8px; font-size: .85rem; color: var(--muted); }
+    #status { min-height: 1.2em; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div><h1>Chat &amp; perintah suara</h1><p>Tanya stok, buat pesanan, minta laporan atau poster</p></div>
+    <nav><a class="btn ghost" href="/dashboard/">Kembali ke kantor</a></nav>
+  </header>
+
+  <div class="chat-wrap">
+    <div id="log" aria-live="polite">
+      <div class="msg bot"><small>OmniStaff</small>Halo! Coba ketik atau ucapkan: "stok kopi robusta", "laporan hari ini", atau "buatkan poster keripik pisang".</div>
+    </div>
+    <div class="tools">
+      <label><input type="checkbox" id="speak"> Bacakan jawaban</label>
+      <span id="status"></span>
+    </div>
+    <form class="composer" id="form">
+      <button type="button" class="btn mic" id="mic" aria-label="Bicara">Bicara</button>
+      <input id="text" type="text" autocomplete="off" placeholder="Ketik pesan…" aria-label="Pesan">
+      <button class="btn" type="submit" id="send">Kirim</button>
+    </form>
+  </div>
+
+  <script src="/assets/api.js"></script>
+  <script src="voice.js"></script>
+  <script>
+    const log = document.getElementById('log');
+    const text = document.getElementById('text');
+    const status = document.getElementById('status');
+    const mic = document.getElementById('mic');
+    const sessionId = 'chat-' + Math.random().toString(36).slice(2, 8);
+
+    function add(role, who, content, imageUrl) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      if (who) { const s = document.createElement('small'); s.textContent = who; div.append(s); }
+      div.append(document.createTextNode(content));
+      if (imageUrl) { const img = document.createElement('img'); img.src = imageUrl; img.alt = 'Poster promosi'; div.append(img); }
+      log.append(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function send(message, viaVoice) {
+      add('user', '', message);
+      document.getElementById('send').disabled = true;
+      status.textContent = 'Staf sedang bekerja…';
+      try {
+        const path = viaVoice ? '/api/ai/voice' : '/api/ai/chat';
+        const body = viaVoice ? { transcript: message, sessionId } : { message, sessionId };
+        const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
+        add('bot', r.staff, r.reply, r.imageUrl);
+        if (document.getElementById('speak').checked) Voice.speak(r.reply);
+        status.textContent = '';
+      } catch (e) {
+        add('bot', 'Sistem', e.message);
+        status.textContent = '';
+      } finally {
+        document.getElementById('send').disabled = false;
+      }
+    }
+
+    document.getElementById('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const m = text.value.trim();
+      if (!m) return;
+      text.value = '';
+      send(m, false);
+    });
+
+    mic.addEventListener('click', () => {
+      if (!Voice.supported) { status.textContent = 'Browser ini belum mendukung suara. Gunakan Chrome atau Edge.'; return; }
+      Voice.listen((t) => send(t, true), (state) => {
+        mic.classList.toggle('on', state === 'listening');
+        if (state === 'listening') status.textContent = 'Mendengarkan…';
+        else if (state.startsWith('error')) status.textContent = 'Mikrofon gagal (' + state.slice(6) + '). Periksa izin mikrofon.';
+        else if (state === 'idle' && status.textContent === 'Mendengarkan…') status.textContent = '';
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+node_modules/
+.env
+frontend/assets/promotions/*
+!frontend/assets/promotions/.gitkeep

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OmniStaff AI — Kantor Virtual UMKM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>OmniStaff AI</h1>
+      <p>Empat staf virtual yang bekerja untuk tokomu</p>
+    </div>
+    <nav>
+      <a class="btn" href="/chat">Buka chat &amp; suara</a>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <section class="stage" aria-label="Kantor virtual 3D">
+      <div id="office3d" role="img" aria-label="Kantor virtual 3D dengan empat staf AI"></div>
+      <p class="stage-hint">Seret untuk memutar kantor, gulir untuk zoom.</p>
+    </section>
+
+    <aside class="side">
+      <section aria-labelledby="h-today">
+        <h2 id="h-today">Hari ini</h2>
+        <div class="numbers">
+          <div><strong id="n-orders">–</strong><span>pesanan</span></div>
+          <div><strong id="n-revenue">–</strong><span>omzet</span></div>
+          <div><strong id="n-profit">–</strong><span>laba</span></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-staff">
+        <h2 id="h-staff">Staf</h2>
+        <ul class="staff-list" id="staff-list" aria-live="polite"></ul>
+      </section>
+
+      <section aria-labelledby="h-chan">
+        <h2 id="h-chan">Kanal pelanggan</h2>
+        <ul class="staff-list" id="channel-list"></ul>
+      </section>
+
+      <section class="command" aria-labelledby="h-cmd">
+        <h2 id="h-cmd">Beri perintah</h2>
+        <form id="cmd-form">
+          <input id="cmd-input" type="text" autocomplete="off" placeholder="Contoh: stok kopi robusta" aria-label="Perintah untuk staf">
+          <button class="btn" type="submit" id="cmd-send">Kirim</button>
+        </form>
+        <div id="reply" role="status"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="../assets/api.js"></script>
+  <script src="js/avatars.js"></script>
+  <script src="js/office.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
