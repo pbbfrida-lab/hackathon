@@ -479,6 +479,7 @@ h1 { font-size: clamp(34px, 5.2vw, 56px); line-height: 1.1; margin: 0 0 18px; le
   position: sticky; top: 18px; padding: 20px; border: 1px solid var(--border);
   border-radius: 10px; background: #fff; box-shadow: var(--shadow);
 }
+#pesanan { scroll-margin-top: 86px; }
 .order-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .order-heading .store-kicker { margin-bottom: 4px; }
 .order-heading h2 { margin-bottom: 15px; font-size: 20px; }
@@ -578,6 +579,7 @@ h1 { font-size: clamp(34px, 5.2vw, 56px); line-height: 1.1; margin: 0 0 18px; le
 @media (max-width: 460px) {
   .store-wrap { padding: 28px 14px 44px; }
   .store-nav { min-height: 62px; padding-inline: 14px; }
+  #pesanan { scroll-margin-top: 78px; }
   .store-heading { margin-bottom: 22px; }
   .store-heading h1 { font-size: 34px; }
   .product-grid { grid-template-columns: 1fr; }
