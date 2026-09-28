@@ -2,7 +2,7 @@
 (function () {
   const container = document.getElementById('office3d');
   if (!window.THREE || !window.Avatars || !container) {
-    if (container) container.innerHTML = '<p style="padding:24px">Three.js gagal dimuat. Periksa koneksi internet.</p>';
+    if (container) container.innerHTML = `<p style="padding:24px">${window.I18N.t('dashboard.officeFailed')}</p>`;
     return;
   }
   const T = THREE;
