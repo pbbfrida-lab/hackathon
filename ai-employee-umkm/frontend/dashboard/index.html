@@ -20,7 +20,7 @@
       <p data-i18n="dashboard.subtitle">Empat staf virtual yang bekerja untuk tokomu</p>
     </div>
     <nav>
-      <a class="btn" href="/chat" data-i18n="dashboard.openChat">Buka chat &amp; suara</a>
+      <a class="btn" href="/dashboard/overview.html" data-i18n="dashboard.overviewLink">Ringkasan</a>
       <div class="lang-switch" data-lang-switch></div>
     </nav>
   </header>
@@ -28,6 +28,35 @@
   <main class="layout">
     <section class="stage" data-i18n-attr="aria-label:dashboard.officeAria" aria-label="Kantor virtual 3D">
       <div id="office3d" role="img" data-i18n-attr="aria-label:dashboard.officeImgAria" aria-label="Kantor virtual 3D dengan empat staf AI"></div>
+      <aside class="agent-panel" id="agentPanel" aria-labelledby="agentName" hidden>
+        <header class="agent-panel-heading">
+          <div>
+            <p class="agent-panel-kicker" data-i18n="dashboard.agentLabel">STAF TERPILIH</p>
+            <h2 id="agentName"></h2>
+            <p class="agent-role" id="agentRole"></p>
+          </div>
+          <button class="agent-close" id="agentClose" type="button" data-i18n-attr="aria-label:dashboard.closeAgentPanel" aria-label="Tutup panel staf">×</button>
+        </header>
+        <p class="agent-task" id="agentTask"></p>
+        <p class="agent-owner-hint" data-i18n="dashboard.ownerChannelHint">Percakapan ini menggunakan akses pemilik toko.</p>
+        <div class="agent-conversation" id="agentConversation" role="log" aria-live="polite" data-i18n-attr="aria-label:dashboard.agentConversationAria" aria-label="Percakapan dengan staf"></div>
+        <div class="agent-actions">
+          <button class="btn agent-voice" id="agentVoice" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span id="agentVoiceLabel" data-i18n="dashboard.voice">Voice</span>
+          </button>
+          <button class="btn ghost agent-message-toggle" id="agentMessageToggle" type="button" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-5.1a2.5 2.5 0 0 1-1-1.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            <span data-i18n="dashboard.message">Pesan</span>
+          </button>
+        </div>
+        <form class="agent-composer" id="agentMessageForm" hidden>
+          <label class="sr-only" for="agentMessage" data-i18n="dashboard.messageAria">Pesan untuk staf</label>
+          <textarea id="agentMessage" rows="2" maxlength="1000" data-i18n-attr="placeholder:dashboard.messagePlaceholder" placeholder="Tulis pesan kepada staf…" required></textarea>
+          <button class="btn" id="agentSend" type="submit" data-i18n="dashboard.send">Kirim</button>
+        </form>
+        <p class="agent-panel-status" id="agentPanelStatus" role="status" aria-live="polite"></p>
+      </aside>
       <p class="stage-hint" data-i18n="dashboard.stageHint">Seret untuk memutar kantor, gulir untuk zoom.</p>
     </section>
 
@@ -66,6 +95,8 @@
   <script src="../assets/api.js" defer></script>
   <script src="js/avatars.js" defer></script>
   <script src="js/office.js" defer></script>
+  <script src="../ai-chat/voice.js" defer></script>
+  <script src="js/office-interaction.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>

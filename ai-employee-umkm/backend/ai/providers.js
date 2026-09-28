@@ -75,6 +75,22 @@ function available() {
   return ordered().filter((p) => isUsable(p, now));
 }
 
+function orderedForAgent(agentKey, candidates = available()) {
+  const preferredId = config.ai.agentProviders[agentKey];
+  const preferred = candidates.find((provider) => provider.id === preferredId);
+  return preferred ? [preferred, ...candidates.filter((provider) => provider !== preferred)] : candidates;
+}
+
+function agentPreferences() {
+  const activeIds = new Set(available().map((provider) => provider.id));
+  return Object.entries(config.ai.agentProviders).map(([agent, provider]) => ({
+    agent,
+    provider,
+    label: byId.get(provider)?.label || provider,
+    available: activeIds.has(provider),
+  }));
+}
+
 /** Provider yang mencoba gagal terakhir ini — dipakai sebagai "last resort" agar pesannya jelas. */
 function lastAttempt() {
   const now = Date.now();
@@ -95,7 +111,7 @@ function activeId() {
  * Melempar error terakhir bila tidak ada provider yang berhasil.
  */
 async function chat(params) {
-  const candidates = available();
+  const candidates = orderedForAgent(params.agentKey, available());
   if (!candidates.length) {
     const err = new Error('Tidak ada provider AI yang siap. Isi minimal satu API key di .env (GROQ_API_KEY / GEMINI_API_KEY / FREEBUFF_API_KEY).');
     err.statusCode = 503;
@@ -170,6 +186,6 @@ function reset() {
 }
 
 module.exports = {
-  chat, isLive, activeId, available, status, check, checkAll, reset, lastAttempt,
+  chat, isLive, activeId, available, status, check, checkAll, reset, lastAttempt, agentPreferences,
   providers: PROVIDERS.map((p) => p.id),
 };

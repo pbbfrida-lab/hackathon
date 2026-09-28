@@ -17,9 +17,10 @@ const router = express.Router();
 const MAX_MESSAGE = 1000;
 
 /** Jalankan satu pesan sebagai pemilik (dashboard) dan simpan ke riwayat sesi. */
-async function runAsOwner(sessionId, message, lang) {
+async function runAsOwner(sessionId, message, lang, agentKey) {
   const result = await agent.handle({
     message,
+    agentKey,
     history: sessions.get(sessionId),
     role: 'owner',
     lang,
@@ -35,18 +36,20 @@ router.post('/chat', asyncHandler(async (req, res) => {
   const body = req.body || {};
   const message = requireString(body.message, 'message', { max: MAX_MESSAGE });
   const sessionId = requireString(body.sessionId || 'dashboard', 'sessionId', { max: 64 });
-  res.json(await runAsOwner(sessionId, message, resolveLang(req)));
+  const agentKey = body.agentKey == null ? undefined : requireString(body.agentKey, 'agentKey', { max: 40 });
+  res.json(await runAsOwner(sessionId, message, resolveLang(req), agentKey));
 }));
 
 router.post('/voice', asyncHandler(async (req, res) => {
   const body = req.body || {};
   const sessionId = requireString(body.sessionId || 'dashboard', 'sessionId', { max: 64 });
+  const agentKey = body.agentKey == null ? undefined : requireString(body.agentKey, 'agentKey', { max: 40 });
   const { text, via } = await voice.transcribe({
     transcript: body.transcript,
     audioBase64: body.audioBase64,
     mimeType: body.mimeType,
   });
-  const result = await runAsOwner(sessionId, text, resolveLang(req));
+  const result = await runAsOwner(sessionId, text, resolveLang(req), agentKey);
   res.json({ transcript: text, transcribedBy: via, ...result });
 }));
 
@@ -72,6 +75,7 @@ router.get('/providers', (req, res) => {
   res.json({
     active: providers.activeId(),
     live: providers.isLive(),
+    agentPreferences: providers.agentPreferences(),
     providers: providers.status(),
   });
 });
