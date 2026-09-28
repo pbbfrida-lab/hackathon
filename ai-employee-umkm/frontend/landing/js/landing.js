@@ -81,7 +81,7 @@
   const state = { products: [], filter: 'all', search: '', cart: new Map(), order: null, status: null, paypal: null, paypalOrderId: null, paypalBusy: false };
   const MAX_QTY_PER_PRODUCT = 20;
   const PRODUCT_PROMOTIONS = new Map([
-    ['kopi robusta lampung 250g', '/assets/promotions/promo-1790581378127.png'],
+    ['kopi robusta lampung 250g', '/assets/promotions/product-kopi-robusta-lampung.webp'],
   ]);
 
   function setStatus(key, vars) {
